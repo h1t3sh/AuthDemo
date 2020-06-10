@@ -7,12 +7,13 @@ var express              = require('express'),
     passportLocaMongoose = require("passport-local-mongoose");
 
 mongoose.connect("mongodb://localhost:27017/auth_demo_app",{ useNewUrlParser: true , useUnifiedTopology: true });
-var app = express();
 
+var app = express();
 
 app.set('view engine', 'ejs');
 
-app.use(require("express-session")({    // require express -session and run with below 3 parameters
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(require("express-session")({    // require express -session and run it with below 3 parameters
     secret: "The world spins round and round and round in a loop",
     resave: false,
     saveUninitialized: false
@@ -20,9 +21,13 @@ app.use(require("express-session")({    // require express -session and run with
 app.use(passport.initialize()); // 2 lines req to use passport
 app.use(passport.session());
 
-passport.serializeUser(User.serializeUser());   // responsible for readind data from session and encoding and decodign it
-passport.deserializeUser(User.deserializeUser());   // unencoding data (deserializing)
+// responsible for reading data from session and encoding and decodign it
+passport.serializeUser(User.serializeUser());           // encode data (serialize)
+passport.deserializeUser(User.deserializeUser());       // unencoding data (deserializing)
 
+//================
+// Routes
+//================
 
 // Home Page route - Root route
 app.get("/", function(req, res){
@@ -32,6 +37,26 @@ app.get("/", function(req, res){
 // Secret Page Route
 app.get("/secret", function(req, res){
     res.render("secret");
+});
+
+// Auth Routes
+
+//Show sign up form
+app.get("/register", function(req, res){
+    res.render("register");
+});
+
+//Handling user sign up
+app.post("/register", function(req, res){
+    User.register(new User({username: req.body.username}), req.body.password, function(err, user){ // make new user and pass username, pass password as second argument to user.register which hashes it and stores it in DB
+        if(err){
+            console.log(err);
+            return res.render('register');
+        }//if noerror
+        passport.authenticate("local")(req, res, function(){ //log the user in, run serialize method with local strategy
+            res.redirect("/secret");
+        });
+    });
 });
 
 
